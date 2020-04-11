@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Style Transfer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- p5 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.sound.min.js"></script>
+  <!-- ml5 -->
+  <script src="https://unpkg.com/ml5@0.4.3/dist/ml5.min.js"></script>
+</head>
+
+<body>
+  <p id='status' style = "margin:auto; font-family: monospace; ">Loading model...</p>
+  <audio src="replay.mp3" id="play" style="display:none" controls>
+    Error: your web browser does not support this audio player.
+  </audio>
+  <script>
+    console.log('ml5 version:', ml5.version);
+
+    let video;
+    let poseNet;
+    let poses = [];
+
+    function setup() {
+      createCanvas(640, 480);
+      video = createCapture(VIDEO);
+      video.size(width, height);
+
+      // Create a new poseNet method with a single detection
+      poseNet = ml5.poseNet(video, modelReady);
+      // This sets up an event that fills the global variable "poses"
+      // with an array every time new poses are detected
+      poseNet.on('pose', function (results) {
+        poses = results;
+        console.log(poses)
+        if (poses.length == 0) {
+          play.pause();
+        } else {
+          play.play();
+        }
+      });
+      // Hide the video element, and just show the canvas
+      video.hide();
+    }
+
+    function modelReady() {
+      select('#status').html('LETS DANCE');
+    }
+
+    function draw() {
+      background(200)
+      image(video, 0, 0, width, height);
+      filter(INVERT);
+
+      // We can call both functions to draw all keypoints and the skeletons
+      drawKeypoints();
+      // drawSkeleton();  
+    }
+
+    // A function to draw ellipses over the detected keypoints
+    function drawKeypoints() {
+      //drawing from left eye:
+
+      for (let i = 0; i < poses.length; i++) {
+        // For each pose detected, loop through all the keypoints
+        for (let j = 0; j < poses[i].pose.keypoints.length; j++) {
+
+          let leftEye = poses[i].pose.keypoints[1];
+          push();
+          if (leftEye.score > 0.2) {
+            fill(255,182,193);
+            // strokeWeight(5);
+            ellipse(leftEye.position.x, leftEye.position.y, 40, 40);
+            ellipse(leftEye.position.x, leftEye.position.y, 15, 20);
+            ellipse(leftEye.position.x, leftEye.position.y, 10, 10);
+            line(leftEye.position.x + 10, leftEye.position.y - 10, leftEye.position.x + 20, leftEye.position.y - 20);
+            line(leftEye.position.x + 10, leftEye.position.y - 5, leftEye.position.x + 30, leftEye.position.y - 15);
+            line(leftEye.position.x + 15, leftEye.position.y, leftEye.position.x + 40, leftEye.position.y);
+          }
+          pop();
+
+          //drawing from right eye:
+          let rightEye = poses[i].pose.keypoints[2];
+          push();
+          if (rightEye.score > 0.1) {
+            fill(255,69,0);
+            ellipse(rightEye.position.x, rightEye.position.y, 30, 30);
+            ellipse(rightEye.position.x, rightEye.position.y, 20, 10);
+            ellipse(rightEye.position.x, rightEye.position.y, 5, 5);
+            line(rightEye.position.x - 10, rightEye.position.y - 10, rightEye.position.x - 20, rightEye.position.y -
+              20);
+            line(rightEye.position.x, rightEye.position.y - 10, rightEye.position.x, rightEye.position.y - 25);
+            line(rightEye.position.x + 10, rightEye.position.y - 10, rightEye.position.x + 20, rightEye.position.y -
+              20);
+          }
+          pop();
+          //drawing from nose:
+          let nose = poses[i].pose.keypoints[0];
+          if (nose.score > 0.1) {
+            push();
+            fill(128,0,128);
+
+            triangle(nose.position.x, nose.position.y, nose.position.x + 15, nose.position.y + 20, nose.position.x + 20,
+              nose.position.y);
+          }
+          pop();
+          //drawing at left shoulder:
+          let leftShoulder = poses[i].pose.keypoints[5];
+          push();
+          if (leftShoulder.score > 0.2) {
+            fill(0, 0, 255);
+            noStroke();
+            ellipse(leftShoulder.position.x, leftShoulder.position.y, 30, 30);
+          }
+          pop();
+
+          //drawing at right shoulder:
+          let rightShoulder = poses[i].pose.keypoints[6];
+          if (rightShoulder.score > 0.2) {
+            push();
+            fill(0, 0, 255);
+            noStroke();
+            ellipse(rightShoulder.position.x, rightShoulder.position.y, 30, 30);
+            pop();
+          }
+
+          //drawing skeleton between left and right shoulder:
+          push();
+          stroke(0, 153, 255);
+          strokeWeight(15);
+          line(leftShoulder.position.x, leftShoulder.position.y, rightShoulder.position.x, rightShoulder.position.y);
+          pop();
+
+          //drawing of left hand:
+          let leftWrist = poses[i].pose.keypoints[9];
+          // Only draw an ellipse is the pose probability is bigger than 0.7
+          if (leftWrist.score > 0.2) {
+            push();
+            fill(0, 0, 255);
+            noStroke();
+            ellipse(leftWrist.position.x, leftWrist.position.y, 30, 30);
+            pop();
+          }
+
+
+          //drawing ellipse at left elbow:
+          let leftElbow = poses[i].pose.keypoints[7];
+          if (leftElbow.score > 0.2); {
+            push();
+            fill(0, 0, 255);
+            noStroke();
+            ellipse(leftElbow.position.x, leftElbow.position.y, 30, 30);
+            pop();
+          }
+
+          //lower left arm:
+          push();
+          stroke(255, 204, 0);
+          strokeWeight(15);
+          line(leftWrist.position.x, leftWrist.position.y, leftElbow.position.x, leftElbow.position.y);
+          pop();
+
+
+          //drawing from right hand
+          let rightWrist = poses[i].pose.keypoints[10];
+          if (rightWrist.score > 0.2) {
+            push();
+            fill(0, 0, 255);
+            noStroke();
+            ellipse(rightWrist.position.x, rightWrist.position.y, 30, 30);
+            pop();
+          }
+
+
+
+          //drawing ellipse at right elbow
+          let rightElbow = poses[i].pose.keypoints[8];
+          push();
+          if (rightElbow.score > 0.2) {
+            fill(0, 0, 255);
+            noStroke();
+            ellipse(rightElbow.position.x, rightElbow.position.y, 30, 30);
+          }
+          pop();
+
+          //lower right arm:
+          push();
+          stroke(255, 102, 0);
+          strokeWeight(15);
+          line(rightWrist.position.x, rightWrist.position.y, rightElbow.position.x, rightElbow.position.y);
+          pop();
+        }
+      }
+    }
+
+  </script>
+</body>
+
+</html>
